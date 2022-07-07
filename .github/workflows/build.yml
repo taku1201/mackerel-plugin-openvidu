@@ -1,0 +1,54 @@
+---
+name: mackerel-plugin-openvidu
+concurrency:
+  group: mackerel-plugin-openvidu-${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  build:
+    if: ${{ github.base_ref == 'main' }} || ${{ github.ref == 'main' }}
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v2
+
+      - name: setup go
+        uses: actions/setup-go@v3
+        with:
+          go-version: '^1.16.3'
+
+      - name: build mackerel-plugin-openvidu-linux-amd64
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o build/linux/amd64/mackerel-plugin-openvidu ./cmd/mackerel-plugin-openvidu
+
+      - name: build mackerel-plugin-openvidu-darwin-arm64
+        run: |
+          GOOS=darwin GOARCH=arm64 go build -o build/darwin/arm64/mackerel-plugin-openvidu ./cmd/mackerel-plugin-openvidu
+
+      - name: archive files
+        run: |
+          tar cvf ./build/linux/amd64/mackerel-plugin-openvidu.tar ./build/linux/amd64/mackerel-plugin-openvidu
+          tar cvf ./build/darwin/arm64/mackerel-plugin-openvidu.tar ./build/darwin/arm64/mackerel-plugin-openvidu
+
+      - name: upload mackerel-plugin-openvidu-linux-amd64
+        uses: actions/upload-artifact@v3
+        with:
+          name: mackerel-plugin-openvidu-linux-amd64
+          path: ./build/linux/amd64/mackerel-plugin-openvidu.tar
+          retention-days: 3
+
+      - name: upload mackerel-plugin-openvidu-darwin-arm64
+        uses: actions/upload-artifact@v3
+        with:
+          name: mackerel-plugin-openvidu-darwin-arm64
+          path: ./build/darwin/arm64/mackerel-plugin-openvidu.tar
+          retention-days: 3
